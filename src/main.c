@@ -3,8 +3,18 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
+#define DOORBELL_BASE 0x1000
 
 const char bar0[] = "/sys/bus/pci/devices/0000:01:00.0/resource0";
+
+volatile uint32_t *calculate_submission_queue_doorbell(volatile uint32_t *p, uint32_t queue_id) {
+    uint32_t userspace_doorbell_offset = 2 * queue_id;
+    return (p + DOORBELL_BASE/4) + userspace_doorbell_offset; 
+}
+
+volatile uint32_t *calculate_completion_queue_doorbell(volatile uint32_t *p, uint32_t queue_id) {
+    return calculate_submission_queue_doorbell(p, queue_id) + 1;
+}
 
 int main() {
     int fd = open(bar0, O_RDWR);
@@ -23,6 +33,7 @@ int main() {
     uint32_t vs = p[2];
     uint32_t cap = p[1];
     uint32_t dstrd = cap & 0xF;
+    uint32_t stride = 1 << (2 + dstrd);
     printf("VS = 0x%08x\n", vs);
     printf("DSTRD = %u\n", dstrd);
     return 0;
