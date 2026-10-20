@@ -1,5 +1,7 @@
+#include "nvme_queue.h"
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/ioctl.h>
 #include <linux/nvme_ioctl.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -13,6 +15,8 @@
 #define PAGE_SIZE 4096
 #define PAGEMAP_ENTRY_SIZE 8
 #define PFN_MASK ((1ULL << 55) - 1)
+#define NVME_ADMIN_CREATE_CQ 0x05
+
 
 const char pagemap[] = "/proc/self/pagemap";
 
@@ -93,10 +97,10 @@ void* prepare_prp_buffer(void) {
     }
     return prp_buffer;
 }
-/*
-struct nvme_passthru_cmd create_admin_command {
-
-    // 5.3 Create I/O Completion Queue command
+// TODO mmap puffer muss wieder freigegeben werden
+struct nvme_passthru_cmd create_cq_admin_command(void) {
+    struct nvme_passthru_cmd cmd = {0};
+    // 5.3 Create I/O Completion Queue command (NVME SPEC)
     uint32_t qid = 5;
     uint32_t qsize = 64 - 1;
     uint32_t cdw10 = (qsize << 16) | qid;
@@ -106,4 +110,14 @@ struct nvme_passthru_cmd create_admin_command {
     uint32_t pc = 1;
 
     uint32_t cdw11 = (iv << 16) | (ien << 1) | (pc << 0);
-}*/
+
+    void* virtual_addr = prepare_prp_buffer();
+    uint64_t physical_addr = virt_to_phys(virtual_addr);
+    cmd.opcode = 0x05;
+    cmd.cdw10 = cdw10;
+    cmd.cdw11 = cdw11;
+    cmd.data_len = QUEUE_BUFFER_SIZE;
+    cmd.addr = (uint64_t) virtual_addr;
+
+    return cmd;
+}

@@ -1,5 +1,7 @@
 #include "nvme_queue.h"
 #include <fcntl.h>
+#include <linux/nvme_ioctl.h>
+#include <sys/ioctl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -43,6 +45,27 @@ int main() {
 
     printf("virtual:  %p\n", physical);
     printf("physical: 0x%llx\n", (unsigned long long)physical_address);
+
+
+    int nvme_fd = open("/dev/nvme0", O_RDONLY);
+
+    if (nvme_fd == -1) {
+        perror("open /dev/nvme0 failed");
+        return 1;
+    }
+
+    struct nvme_passthru_cmd cmd = create_cq_admin_command();
+
+    int ret = ioctl(nvme_fd, NVME_IOCTL_ADMIN_CMD, &cmd);
+
+    if (ret < 0) {
+        perror("ioctl create CQ");
+    } else {
+        printf("ioctl returned: %d\n", ret);
+        printf("cmd.result: 0x%x\n", cmd.result);
+    }
+
+
 
     return 0;
 }

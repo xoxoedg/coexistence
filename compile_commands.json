@@ -1,0 +1,32 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-c",
+      "-Wall",
+      "-Wextra",
+      "-O0",
+      "-o",
+      "main",
+      "src/main.c"
+    ],
+    "directory": "/home/returnes/Development/coexistence",
+    "file": "/home/returnes/Development/coexistence/src/main.c",
+    "output": "/home/returnes/Development/coexistence/main"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-c",
+      "-Wall",
+      "-Wextra",
+      "-O0",
+      "-o",
+      "main",
+      "src/nvme_queue.c"
+    ],
+    "directory": "/home/returnes/Development/coexistence",
+    "file": "/home/returnes/Development/coexistence/src/nvme_queue.c",
+    "output": "/home/returnes/Development/coexistence/main"
+  }
+]
