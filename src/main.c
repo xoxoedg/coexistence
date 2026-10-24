@@ -53,8 +53,8 @@ int main() {
         perror("open /dev/nvme0 failed");
         return 1;
     }
-
-    struct nvme_passthru_cmd cmd = create_cq_admin_command();
+    void* prp_buffer = prepare_prp_buffer();
+    struct nvme_passthru_cmd cmd = create_cq_admin_command(prp_buffer);
 
     int ret = ioctl(nvme_fd, NVME_IOCTL_ADMIN_CMD, &cmd);
 
