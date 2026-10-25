@@ -13,9 +13,7 @@ struct nvme_status {
 };
 
 
-struct nvme_status parse_nvme_status(uint32_t status);
-void *prepare_prp_buffer(size_t size);
-uint64_t virt_to_phys(void *virtual_addr);
+int handle_nvme_result(int ret, const char *what);
 struct nvme_passthru_cmd create_cq_admin_command(void* prp_buffer, size_t size);
 struct nvme_passthru_cmd create_sq_admin_command(void *prp_buffer, size_t size); 
 struct nvme_passthru_cmd delete_sq_admin_command(void); 
