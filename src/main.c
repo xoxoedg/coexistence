@@ -7,7 +7,8 @@
 #include <string.h>
 #include <sys/mman.h>
 #define DOORBELL_BASE 0x1000
-
+#define CQ_QUEUE_BUFFER_SIZE 1024
+#define SQ_QUEUE_BUFFER_SIZE 4096 
 const char bar0[] = "/sys/bus/pci/devices/0000:01:00.0/resource0";
 
 volatile uint32_t *calculate_submission_queue_doorbell(volatile uint32_t *p, uint32_t queue_id) {
@@ -53,7 +54,7 @@ int main() {
         perror("open /dev/nvme0 failed");
         return 1;
     }
-    void* prp_buffer = prepare_prp_buffer();
+    void* prp_buffer = prepare_prp_buffer(CQ_QUEUE_BUFFER_SIZE );
     struct nvme_passthru_cmd cmd = create_cq_admin_command(prp_buffer);
 
     int ret = ioctl(nvme_fd, NVME_IOCTL_ADMIN_CMD, &cmd);
