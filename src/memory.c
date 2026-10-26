@@ -91,3 +91,8 @@ void *prepare_prp_buffer(size_t size) {
     }
     return prp_buffer;
 }
+
+void release_queue_buffer(void* cq_buffer, void* sq_buffer, size_t cq_size, size_t sq_size) {
+    munmap(cq_buffer, cq_size);
+    munmap(sq_buffer, sq_size);
+}

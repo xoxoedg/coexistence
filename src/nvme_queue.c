@@ -14,8 +14,7 @@
 #define DNR_SHIFT 14
 #define M_SHIFT 13
 #define SC_MASK ((1UL << 8) - 1)
-#define CQ_ENTRY_SIZE 16
-#define SQ_ENTRY_SIZE 64
+
 #define NVME_ADMIN_CREATE_CQ 0x05
 #define NVME_ADMIN_DELETE_CQ 0x04
 #define NVME_ADMIN_CREATE_SQ 0x01
@@ -61,10 +60,9 @@ int handle_nvme_result(int ret, const char *what) {
     }
 }
 
-struct nvme_passthru_cmd create_cq_admin_command(void *prp_buffer, size_t size) {
+struct nvme_passthru_cmd create_cq_admin_command(volatile void *prp_buffer, size_t size, uint32_t qid) {
     struct nvme_passthru_cmd cmd = { 0 };
     // 5.3 Create I/O Completion Queue command (NVME SPEC)
-    uint32_t qid = 5;
     uint32_t qsize = (size / CQ_ENTRY_SIZE) - 1;
     uint32_t cdw10 = (qsize << 16) | qid;
 
@@ -83,10 +81,9 @@ struct nvme_passthru_cmd create_cq_admin_command(void *prp_buffer, size_t size) 
     return cmd;
 }
 
-struct nvme_passthru_cmd create_sq_admin_command(void *prp_buffer, size_t size) {
+struct nvme_passthru_cmd create_sq_admin_command(volatile void *prp_buffer, size_t size, uint32_t qid) {
     struct nvme_passthru_cmd cmd = { 0 };
     // 5.4 Create I/O Submission Queue command
-    uint32_t qid = 5;
     uint32_t qsize = (size / SQ_ENTRY_SIZE) - 1;
     uint32_t cdw10 = (qsize << 16) | qid;
 
@@ -105,9 +102,8 @@ struct nvme_passthru_cmd create_sq_admin_command(void *prp_buffer, size_t size) 
     return cmd;
 }
 
-struct nvme_passthru_cmd delete_cq_admin_command(void) {
+struct nvme_passthru_cmd delete_cq_admin_command(uint32_t qid) {
     struct nvme_passthru_cmd cmd = { 0 };
-    uint32_t qid = 5;
 
     cmd.opcode = NVME_ADMIN_DELETE_CQ;
     cmd.cdw10 = qid;
@@ -115,9 +111,8 @@ struct nvme_passthru_cmd delete_cq_admin_command(void) {
     return cmd;
 }
 
-struct nvme_passthru_cmd delete_sq_admin_command(void) {
+struct nvme_passthru_cmd delete_sq_admin_command(uint32_t qid) {
     struct nvme_passthru_cmd cmd = { 0 };
-    uint32_t qid = 5;
 
     cmd.opcode = NVME_ADMIN_DELETE_SQ;
     cmd.cdw10 = qid;
