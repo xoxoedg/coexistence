@@ -1,6 +1,6 @@
 #include "nvme_queue_manager.h"
 #include "memory.h"
-#include "nvme_queue.h"
+#include "nvme_queue_commands.h"
 #include <linux/nvme_ioctl.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -134,7 +134,7 @@ int delete_queue_pair(int nvme_fd, struct nvme_queue_pair *queue_pair) {
     int sq_ret  = delete_sq_queue(nvme_fd, queue_pair->qid);
 
     int cq_ret = delete_cq_queue(nvme_fd, queue_pair->qid);
-
+    // Todo separat freigeben: delete kann failen, trotzdem geben wir den Puffer frei
     release_queue_buffer((void*) queue_pair->cq.buffer, (void*) queue_pair->sq.buffer, CQ_QUEUE_BUFFER_SIZE, SQ_QUEUE_BUFFER_SIZE);
 
     if (sq_ret != 0 || cq_ret != 0) {

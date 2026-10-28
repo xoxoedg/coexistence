@@ -1,7 +1,5 @@
-#include "nvme_queue.h"
 #include <fcntl.h>
 #include <linux/nvme_ioctl.h>
-#include "memory.h"
 #include "nvme_queue_manager.h"
 #include <stdint.h>
 #include <stdio.h>
