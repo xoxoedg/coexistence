@@ -1,6 +1,7 @@
 #include "nvme_queue_manager.h"
 #include "memory.h"
 #include "nvme_queue_commands.h"
+#include "nvme_types.h"
 #include <linux/nvme_ioctl.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -28,7 +29,6 @@ volatile uint32_t *calculate_submission_queue_doorbell(volatile uint32_t *p, uin
 volatile uint32_t *calculate_completion_queue_doorbell(volatile uint32_t *p, uint32_t queue_id, uint32_t stride) {
     return calculate_doorbell(p, 2 * queue_id + 1, stride);
 }
-
 struct nvme_completion_queue initialize_cq(volatile uint32_t *bar0, uint32_t stride) {
     struct nvme_completion_queue cq;
     void* cq_prp_buffer = prepare_prp_buffer(CQ_QUEUE_BUFFER_SIZE );
@@ -42,10 +42,10 @@ struct nvme_completion_queue initialize_cq(volatile uint32_t *bar0, uint32_t str
 
     return cq;
 }
-
+// Todo handle prepare_prp_buffer=null
 struct nvme_submission_queue initialize_sq(volatile uint32_t *bar0, uint32_t stride) {
     struct nvme_submission_queue sq;
-    void* sq_prp_buffer = prepare_prp_buffer(SQ_QUEUE_BUFFER_SIZE );
+    struct nvme_sq_entry *sq_prp_buffer = prepare_prp_buffer(SQ_QUEUE_BUFFER_SIZE );
     volatile uint32_t *doorbell = calculate_submission_queue_doorbell(bar0, QUEUE_ID, stride);
 
     sq.buffer = sq_prp_buffer;

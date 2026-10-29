@@ -5,7 +5,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
+#include "nvme_io_commands.h"
+#include "nvme_types.h"
+
 const char bar0[] = "/sys/bus/pci/devices/0000:01:00.0/resource0";
+
+void submit_command(struct nvme_submission_queue *sq, struct nvme_sq_entry entry) {
+    sq->buffer[sq->tail] = entry;
+    sq->tail = (sq->tail + 1) % sq->size;
+    sq->doorbell[0] = sq->tail;
+}
 
 
 int main() {
@@ -37,6 +46,10 @@ int main() {
     }
     int create_ret = create_queue_pair(&queue_pair, p, stride, nvme_fd);
     printf("Return value is %d \n", create_ret);
+
+
+
+
 
     if (create_ret == 0) {
         int delete_ret = delete_queue_pair(nvme_fd, &queue_pair);

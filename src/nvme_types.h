@@ -11,19 +11,13 @@ enum nvme_io_opcode {
     NVME_OP_READ = 0x02,
 };
 
-struct dma_buffer {
-    void* virtual_address;
-    uint64_t physical_address;
-    size_t size;
-};
+
 
 struct nvme_submission_queue {
     volatile uint32_t *doorbell;
-    volatile void *buffer;
+    volatile struct nvme_sq_entry *buffer;
     uint32_t size;
     uint32_t tail;
-
-
 };
 
 struct nvme_completion_queue {
