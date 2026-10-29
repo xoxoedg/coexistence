@@ -11,8 +11,9 @@ uint32_t build_cdw0(uint8_t opcode, uint16_t cid) {
 }
 
 uint64_t build_prp() {
+    uint64_t physical_address;
     void* virtual_address = prepare_prp_buffer(PAGESIZE);
-    uint64_t phsyical_address = virt_to_phys(virtual_address);
+    uint64_t phsyical_address = virt_to_phys(virtual_address, &physical_address);
     return phsyical_address;
 }
 

@@ -1,6 +1,7 @@
 #ifndef NVME_TYPES_H
 #define NVME_TYPES_H
 
+#include <stddef.h>
 #include <stdint.h>
 //Todo DMA Struct anlegen virt, phys, size
 //In memory.c eine zusammenführende Methode virt -> phys -> dma buffer struct
@@ -8,6 +9,12 @@ enum nvme_io_opcode {
     NVME_OP_FLUSH = 0x00,
     NVME_OP_WRITE = 0x01,
     NVME_OP_READ = 0x02,
+};
+
+struct dma_buffer {
+    void* virtual_address;
+    uint64_t physical_address;
+    size_t size;
 };
 
 struct nvme_submission_queue {

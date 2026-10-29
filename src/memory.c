@@ -1,3 +1,4 @@
+#include "nvme_types.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -14,29 +15,29 @@
 
 const char pagemap[] = "/proc/self/pagemap";
 
-uint64_t virt_to_phys(void *virtual_addr) {
+int virt_to_phys(void *virtual_address, uint64_t *physical_address) {
     int fd = open(pagemap, O_RDONLY);
     if (fd == -1) {
         perror("open pagemap failed ");
-        return 0;
+        return -1;
     }
-    uintptr_t page_number = (uintptr_t)virtual_addr / PAGE_SIZE;
+    uintptr_t page_number = (uintptr_t)virtual_address / PAGE_SIZE;
     off_t pagemap_position = page_number * PAGEMAP_ENTRY_SIZE;
-    uintptr_t page_offset = (uintptr_t)virtual_addr % PAGE_SIZE;
+    uintptr_t page_offset = (uintptr_t)virtual_address % PAGE_SIZE;
     off_t file_offset = lseek(fd, pagemap_position, SEEK_SET);
 
     if (file_offset == -1) {
         perror("lseek failed");
         close(fd);
-        return 0;
+        return -1;
     }
     uint64_t entry_buffer;
     ssize_t bytes_read = read(fd, &entry_buffer, PAGEMAP_ENTRY_SIZE);
 
-    if (bytes_read != 8) {
+    if (bytes_read != PAGEMAP_ENTRY_SIZE) {
         perror("reading page map entry failed");
         close(fd);
-        return 0;
+        return -1;
     }
     uint64_t is_page_present = (entry_buffer >> 63) & 1;
 
@@ -44,12 +45,12 @@ uint64_t virt_to_phys(void *virtual_addr) {
         fprintf(stderr, "virt_to_phys: page not present (entry=0x%llx)\n",
             (unsigned long long)entry_buffer);
         close(fd);
-        return 0;
+        return -1;
     }
     uint64_t pfn = entry_buffer & PFN_MASK;
-    uint64_t phys_addres = pfn * PAGE_SIZE + page_offset;
+    *physical_address = pfn * PAGE_SIZE + page_offset;
     close(fd);
-    return phys_addres;
+    return 0;
 }
 
 
@@ -57,7 +58,7 @@ void *create_prp_buffer(size_t size) {
     void *prp_buffer = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 
     if (prp_buffer == MAP_FAILED) {
-        perror("mmap queue buffer");
+        perror("mmap  buffer");
         return NULL;
     }
     return prp_buffer;
@@ -77,6 +78,10 @@ int lock_page(void *prp_buffer, size_t size) {
     return status;
 }
 
+void release_buffer(void* buffer, size_t size) {
+    munmap(buffer, size);
+}
+
 void *prepare_prp_buffer(size_t size) {
     void *prp_buffer = create_prp_buffer(size);
 
@@ -91,6 +96,27 @@ void *prepare_prp_buffer(size_t size) {
     }
     return prp_buffer;
 }
+
+int create_dma_buffer(size_t size, struct dma_buffer *dma_buffer) {
+    void* virtual_address = prepare_prp_buffer(size);
+    uint64_t physical_address; 
+    if (virtual_address == NULL) {
+        return -1;
+    }
+    
+    int ret = virt_to_phys(virtual_address, &physical_address); 
+
+    if (ret == -1) {
+        release_buffer(virtual_address, size);
+        return -1;
+    }
+
+    dma_buffer->virtual_address = virtual_address;
+    dma_buffer->physical_address = physical_address;
+    dma_buffer->size = size;
+    return 0;
+}
+
 
 void release_queue_buffer(void* cq_buffer, void* sq_buffer, size_t cq_size, size_t sq_size) {
     munmap(cq_buffer, cq_size);
