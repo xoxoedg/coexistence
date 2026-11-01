@@ -1,10 +1,10 @@
 #include "nvme_queue_manager.h"
 #include "memory.h"
 #include "nvme_queue_commands.h"
+#include "nvme_log.h"
 #include "nvme_types.h"
 #include <linux/nvme_ioctl.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <sys/ioctl.h>
 #include <stddef.h>
 #include <sys/mman.h>
@@ -13,8 +13,14 @@
 #define CQ_QUEUE_BUFFER_SIZE 1024
 #define SQ_QUEUE_BUFFER_SIZE 4096 
 #define QUEUE_ID 5
+#define CQE_PHASE_MASK 0x00010000
 
 int delete_cq_queue(int nvme_fd, uint32_t qid);
+
+
+uint32_t get_phase_bit(struct nvme_completion_queue *cq) {
+    return (cq->buffer[cq->head].dw3 & CQE_PHASE_MASK) >> 16;
+}
 
 volatile uint32_t *calculate_doorbell(volatile uint32_t *bar0, uint32_t doorbell_index, uint32_t stride) {
     size_t byte_offset = DOORBELL_BASE + doorbell_index * stride; 
@@ -70,7 +76,7 @@ int create_cq(struct nvme_queue_pair queue_pair, int nvme_fd) {
     struct nvme_passthru_cmd cq_cmd = create_cq_admin_command(cq_prp_buffer, CQ_QUEUE_BUFFER_SIZE, queue_pair.qid);
     int cq_ret = ioctl(nvme_fd, NVME_IOCTL_ADMIN_CMD, &cq_cmd);
 
-    if (handle_nvme_result(cq_ret, "create cq") != 0) {
+    if (log_status_field(cq_ret, "create cq") != 0) {
         munmap((void*)cq_prp_buffer, CQ_QUEUE_BUFFER_SIZE);
         return -1;
     }
@@ -82,7 +88,7 @@ int create_sq(struct nvme_queue_pair queue_pair, int nvme_fd) {
     struct nvme_passthru_cmd sq_cmd = create_sq_admin_command(sq_prp_buffer, SQ_QUEUE_BUFFER_SIZE, queue_pair.qid);
     int sq_ret = ioctl(nvme_fd, NVME_IOCTL_ADMIN_CMD, &sq_cmd);
 
-    if (handle_nvme_result(sq_ret, "create sq") != 0) {
+    if (log_status_field(sq_ret, "create sq") != 0) {
         delete_cq_queue(nvme_fd, queue_pair.qid);
         return -1;
     }
@@ -113,7 +119,7 @@ int delete_cq_queue(int nvme_fd, uint32_t qid) {
     struct nvme_passthru_cmd cq_delete_cmd = delete_cq_admin_command(qid);
     int cq_delete_ret = ioctl(nvme_fd, NVME_IOCTL_ADMIN_CMD, &cq_delete_cmd);
 
-    if (handle_nvme_result(cq_delete_ret, "delete cq") != 0) {
+    if (log_status_field(cq_delete_ret, "delete cq") != 0) {
         return -1;
         }
     return 0;
@@ -123,7 +129,7 @@ int delete_sq_queue(int nvme_fd, uint32_t qid) {
     struct nvme_passthru_cmd sq_delete_cmd = delete_sq_admin_command(qid);
     int sq_delete_ret = ioctl(nvme_fd, NVME_IOCTL_ADMIN_CMD, &sq_delete_cmd);
 
-    if (handle_nvme_result(sq_delete_ret, "delete sq") != 0) {
+    if (log_status_field(sq_delete_ret, "delete sq") != 0) {
         return -1;
     }
     return 0;

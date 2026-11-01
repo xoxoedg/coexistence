@@ -1,6 +1,5 @@
 #include "nvme_types.h"
 #include <stdint.h>
-#include "memory.h"
 
 #define PAGESIZE 4096
 uint32_t build_cdw0(uint8_t opcode, uint16_t cid) {
@@ -23,5 +22,7 @@ struct nvme_sq_entry create_sq_entry(uint8_t opcode, uint16_t cid) {
     sq_entry.cdw0 = build_cdw0(opcode, cid);
     sq_entry.nsid = 1;
     return sq_entry;
+
+
 }
 
