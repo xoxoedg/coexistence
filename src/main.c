@@ -1,3 +1,4 @@
+#include "memory.h"
 #include "nvme_io_commands.h"
 #include "nvme_log.h"
 #include "nvme_queue_manager.h"
@@ -10,6 +11,8 @@
 #include <sys/mman.h>
 const char bar0[] = "/sys/bus/pci/devices/0000:01:00.0/resource0";
 
+#define BLOCK_SIZE 512
+
 void submit_command(struct nvme_submission_queue *sq, struct nvme_sq_entry entry) {
     sq->buffer[sq->tail] = entry;
     sq->tail = (sq->tail + 1) % sq->size;
@@ -18,7 +21,7 @@ void submit_command(struct nvme_submission_queue *sq, struct nvme_sq_entry entry
 
 void poll_completion(struct nvme_completion_queue *cq, struct nvme_cq_entry *cq_entry) {
     while (get_phase_bit(cq) != cq->phase) {
-        //Todo Timeout
+        // Todo Timeout
     }
     *cq_entry = cq->buffer[cq->head];
     cq->head += 1;
@@ -28,11 +31,12 @@ void poll_completion(struct nvme_completion_queue *cq, struct nvme_cq_entry *cq_
     }
     cq->doorbell[0] = cq->head;
 };
-
+// Todo rewrite to api
 int main() {
     int fd = open(bar0, O_RDWR);
     struct nvme_queue_pair queue_pair;
     struct nvme_cq_entry cq_entry;
+    struct dma_buffer prp_buffer;
     if (fd == -1) {
         perror("opening bar0 failed");
         return -1;
@@ -57,15 +61,24 @@ int main() {
         perror("open /dev/nvme0 failed");
         return 1;
     }
+
+    uint16_t nlb = 0;
+    if (create_dma_buffer((nlb + 1) * BLOCK_SIZE, &prp_buffer) == -1) {
+        return 1;
+    };
     int create_ret = create_queue_pair(&queue_pair, p, stride, nvme_fd);
     printf("Return value is %d \n", create_ret);
 
     if (create_ret == 0) {
-        for (int i = 0; i < 200; i++) {
-            struct nvme_sq_entry sq_entry = create_sq_entry(0, i);
+        for (int i = 0; i < 1; i++) {
+
+            struct nvme_sq_entry sq_entry
+                = create_read_entry(0, 1, nlb, prp_buffer.physical_address);
             submit_command(&queue_pair.sq, sq_entry);
             poll_completion(&queue_pair.cq, &cq_entry);
 
+            printf("phys: 0x%lx\n", prp_buffer.physical_address);
+            printf("data: %.21s\n", (char *)prp_buffer.virtual_address);
             struct nvme_status_field status_field = parse_status_field(cq_entry.dw3 >> 17);
             uint32_t cid = get_cid(cq_entry.dw3);
             if (cid != i) {
@@ -87,6 +100,7 @@ int main() {
             log_sqid(cq_entry.dw2);
         }
 
+        release_buffer(prp_buffer.virtual_address, prp_buffer.size);
         int delete_ret = delete_queue_pair(nvme_fd, &queue_pair);
         printf("Return value is %d \n", delete_ret);
 
