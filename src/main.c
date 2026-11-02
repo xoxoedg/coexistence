@@ -17,7 +17,9 @@ void submit_command(struct nvme_submission_queue *sq, struct nvme_sq_entry entry
 }
 
 void poll_completion(struct nvme_completion_queue *cq, struct nvme_cq_entry *cq_entry) {
-    while (get_phase_bit(cq) != cq->phase) { }
+    while (get_phase_bit(cq) != cq->phase) {
+        //Todo Timeout
+    }
     *cq_entry = cq->buffer[cq->head];
     cq->head += 1;
     if (cq->head == cq->size) {
