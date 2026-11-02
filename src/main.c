@@ -19,7 +19,6 @@ void submit_command(struct nvme_submission_queue *sq, struct nvme_sq_entry entry
 void poll_completion(struct nvme_completion_queue *cq, struct nvme_cq_entry *cq_entry) {
     while (get_phase_bit(cq) != cq->phase) { }
     *cq_entry = cq->buffer[cq->head];
-    log_status_field((cq_entry->dw3) >> 17, "cq entry");
     cq->head += 1;
     if (cq->head == cq->size) {
         cq->phase = (cq->phase + 1) % 2;
@@ -60,18 +59,35 @@ int main() {
     printf("Return value is %d \n", create_ret);
 
     if (create_ret == 0) {
-        struct nvme_sq_entry sq_entry = create_sq_entry(0, 4660);
-        submit_command(&queue_pair.sq, sq_entry);
-        poll_completion(&queue_pair.cq, &cq_entry);
+        for (int i = 0; i < 200; i++) {
+            struct nvme_sq_entry sq_entry = create_sq_entry(0, i);
+            submit_command(&queue_pair.sq, sq_entry);
+            poll_completion(&queue_pair.cq, &cq_entry);
 
-        log_cid(cq_entry.dw3);
-        log_sqid(cq_entry.dw2);
-    }
+            struct nvme_status_field status_field = parse_status_field(cq_entry.dw3 >> 17);
+            uint32_t cid = get_cid(cq_entry.dw3);
+            if (cid != i) {
+                fprintf(stderr, "Wrong cid (actual: %u | expected: %u)\n", cid, i);
+                break;
+            }
+            uint32_t sqid = get_sqid(cq_entry.dw2);
+            if (sqid != queue_pair.qid) {
+                fprintf(stderr, "Wrong sqid (actual: %u | expected %u\n", sqid, queue_pair.qid);
+                break;
+            }
+            if (status_field.sct != 0 || status_field.sc != 0) {
+                fprintf(stderr, "I/O failed with sct: %u / sc: 0x%02x\n", status_field.sct,
+                    status_field.sc);
+                break;
+            }
 
-    if (create_ret == 0) {
+            log_cid(cq_entry.dw3);
+            log_sqid(cq_entry.dw2);
+        }
+
         int delete_ret = delete_queue_pair(nvme_fd, &queue_pair);
         printf("Return value is %d \n", delete_ret);
-    }
 
-    return 0;
+        return 0;
+    }
 }

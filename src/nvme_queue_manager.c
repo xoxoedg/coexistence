@@ -25,7 +25,6 @@ uint32_t get_phase_bit(struct nvme_completion_queue *cq) {
 volatile uint32_t *calculate_doorbell(volatile uint32_t *bar0, uint32_t doorbell_index, uint32_t stride) {
     size_t byte_offset = DOORBELL_BASE + doorbell_index * stride; 
     return bar0 + byte_offset / 4;
-    
 }
 
 volatile uint32_t *calculate_submission_queue_doorbell(volatile uint32_t *p, uint32_t queue_id, uint32_t stride) {

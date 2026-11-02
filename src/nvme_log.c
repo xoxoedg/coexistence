@@ -22,12 +22,20 @@ struct nvme_status_field parse_status_field(uint32_t status_field) {
     return nvme_status_field;
 }
 
+uint32_t get_cid(uint32_t dw3) {
+    return dw3 & CID_MASK;
+}
+
+uint32_t get_sqid(uint32_t dw2) {
+    return (dw2 >> SQID_SHIFT) & SQID_MASK;
+}
+
 void log_cid(uint32_t dw3) {
-   printf("cid : %u\n", dw3 & CID_MASK);
+   printf("cid : %u\n", get_cid(dw3));
 }
 
 void log_sqid(uint32_t dw2) {
-   printf("sq id: %u\n", (dw2 >> SQID_SHIFT) & SQID_MASK);
+   printf("sq id: %u\n", get_sqid(dw2));
 }
 
 int log_status_field(int ret, const char *what) {
