@@ -9,7 +9,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
+#include "util.h"
+
+#define TIMEOUT 1000000000
 const char bar0[] = "/sys/bus/pci/devices/0000:01:00.0/resource0";
+
 
 #define BLOCK_SIZE 512
 
@@ -19,9 +23,11 @@ void submit_command(struct nvme_submission_queue *sq, struct nvme_sq_entry entry
     sq->doorbell[0] = sq->tail;
 }
 
-void poll_completion(struct nvme_completion_queue *cq, struct nvme_cq_entry *cq_entry) {
+int poll_completion(struct nvme_completion_queue *cq, struct nvme_cq_entry *cq_entry) {
+    uint64_t now = now_nano();
     while (get_phase_bit(cq) != cq->phase) {
-        // Todo Timeout
+        if(now_nano() - now > TIMEOUT) {
+            return -1;        }
     }
     *cq_entry = cq->buffer[cq->head];
     cq->head += 1;
@@ -30,6 +36,7 @@ void poll_completion(struct nvme_completion_queue *cq, struct nvme_cq_entry *cq_
         cq->head = 0;
     }
     cq->doorbell[0] = cq->head;
+    return 0;
 };
 // Todo rewrite to api
 int main() {
@@ -75,7 +82,10 @@ int main() {
             struct nvme_sq_entry sq_entry
                 = create_read_entry(0, 1, nlb, prp_buffer.physical_address);
             submit_command(&queue_pair.sq, sq_entry);
-            poll_completion(&queue_pair.cq, &cq_entry);
+            if(poll_completion(&queue_pair.cq, &cq_entry) == -1) {
+                fprintf(stderr, "timeout at i=%d\n", i);
+                break;
+            }
 
             printf("phys: 0x%lx\n", prp_buffer.physical_address);
             printf("data: %.21s\n", (char *)prp_buffer.virtual_address);
