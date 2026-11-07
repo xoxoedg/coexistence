@@ -57,7 +57,7 @@ struct nvme_completion_queue {
 };
 
 struct nvme_queue_pair {
-    uint32_t qid;
+    uint16_t qid;
     struct nvme_submission_queue sq;
     struct nvme_completion_queue cq;
 };

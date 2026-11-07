@@ -82,10 +82,7 @@ int main() {
             struct nvme_sq_entry sq_entry
                 = create_read_entry(0, 1, nlb, prp_buffer.physical_address);
             submit_command(&queue_pair.sq, sq_entry);
-            if(poll_completion(&queue_pair.cq, &cq_entry) == -1) {
-                fprintf(stderr, "timeout at i=%d\n", i);
-                break;
-            }
+            poll_completion(&queue_pair.cq, &cq_entry);
 
             printf("phys: 0x%lx\n", prp_buffer.physical_address);
             printf("data: %.21s\n", (char *)prp_buffer.virtual_address);
