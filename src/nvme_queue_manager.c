@@ -10,6 +10,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 
+#define TIMEOUT 1000000000
 #define DOORBELL_BASE 0x1000
 #define CQ_QUEUE_BUFFER_SIZE 1024
 #define SQ_QUEUE_BUFFER_SIZE 4096
@@ -161,3 +162,25 @@ int delete_queue_pair(int nvme_fd, struct nvme_queue_pair *queue_pair) {
 
     return 0;
 }
+
+void submit_command(struct nvme_submission_queue *sq, struct nvme_sq_entry entry) {
+    sq->buffer[sq->tail] = entry;
+    sq->tail = (sq->tail + 1) % sq->size;
+    sq->doorbell[0] = sq->tail;
+}
+
+int poll_completion(struct nvme_completion_queue *cq, struct nvme_cq_entry *cq_entry) {
+    uint64_t now = now_nano();
+    while (get_phase_bit(cq) != cq->phase) {
+        if(now_nano() - now > TIMEOUT) {
+            return -1;        }
+    }
+    *cq_entry = cq->buffer[cq->head];
+    cq->head += 1;
+    if (cq->head == cq->size) {
+        cq->phase = (cq->phase + 1) % 2;
+        cq->head = 0;
+    }
+    cq->doorbell[0] = cq->head;
+    return 0;
+};
