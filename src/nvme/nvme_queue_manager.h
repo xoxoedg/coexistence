@@ -4,7 +4,7 @@
 #include "nvme_types.h"
 #include <stdint.h>
 #include <sys/types.h>
-#include "util.h"
+#include "../mem/util.h"
 
 
 int create_queue_pair(struct nvme_queue_pair *queue_pair, volatile uint32_t *bar0, uint32_t stride, int nvme_fd, uint16_t qid);

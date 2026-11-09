@@ -1,9 +1,9 @@
 #include "coexistence.h"
-#include "memory.h"
-#include "nvme_io_commands.h"
-#include "nvme_log.h"
-#include "nvme_queue_manager.h"
-#include "nvme_types.h"
+#include "../nvme/nvme_io_commands.h"
+#include "../nvme/nvme_log.h"
+#include "../nvme/nvme_queue_manager.h"
+#include "../nvme/nvme_types.h"
+#include "../mem/memory.h"
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdint.h>

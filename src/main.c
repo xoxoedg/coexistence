@@ -1,6 +1,5 @@
-
-#include "coexistence.h"
-#include "nvme_types.h"
+#include "api/coexistence.h"
+#include "nvme/nvme_types.h"
 #include <fcntl.h>
 #include <linux/nvme_ioctl.h>
 #include <stdint.h>

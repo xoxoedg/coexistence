@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Wconversion -std=gnu11
 DEPFLAGS = -MMD -MP
 BUILD = build
-SRC = $(wildcard src/*.c)
+SRC = $(wildcard src/*.c src/*/*.c)
 OBJ = $(SRC:src/%.c=$(BUILD)/%.o)
 DEP = $(OBJ:.o=.d)
 .PHONY: clean
@@ -12,7 +12,7 @@ $(BUILD)/main: $(OBJ)
 
 
 $(BUILD)/%.o: src/%.c
-	mkdir -p $(BUILD)
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(DEPFLAGS) -c $<  -o $@
 
 

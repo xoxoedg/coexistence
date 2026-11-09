@@ -1,8 +1,8 @@
 #include "nvme_queue_manager.h"
-#include "memory.h"
 #include "nvme_log.h"
 #include "nvme_queue_commands.h"
 #include "nvme_types.h"
+#include "../mem/memory.h"
 #include <linux/nvme_ioctl.h>
 #include <stddef.h>
 #include <stdint.h>

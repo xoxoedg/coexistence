@@ -2,7 +2,7 @@
 #define COEXISTENCE_H
 #include <stddef.h>
 #include <stdint.h>
-#include "nvme_types.h"
+#include "../nvme/nvme_types.h"
 
 struct coex_device {
     uint32_t vs;
