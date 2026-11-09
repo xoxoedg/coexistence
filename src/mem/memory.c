@@ -1,13 +1,12 @@
 #include "memory.h"
 #include <fcntl.h>
-#include <unistd.h>
-#include <sys/types.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <sys/mman.h>
 #include <string.h>
-#include <stddef.h>
-
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define PAGE_SIZE 4096
 #define PAGEMAP_ENTRY_SIZE 8
@@ -48,11 +47,15 @@ int virt_to_phys(void *virtual_address, uint64_t *physical_address) {
         return -1;
     }
     uint64_t pfn = entry_buffer & PFN_MASK;
+    if (pfn == 0) {
+        fprintf(stderr, "Root access required for pfn\n");
+        close(fd);
+        return -1;
+    }
     *physical_address = pfn * PAGE_SIZE + page_offset;
     close(fd);
     return 0;
 }
-
 
 void *create_prp_buffer(size_t size) {
     void *prp_buffer = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
@@ -78,7 +81,7 @@ int lock_page(void *prp_buffer, size_t size) {
     return status;
 }
 
-void release_buffer(void* buffer, size_t size) {
+void release_buffer(void *buffer, size_t size) {
     munmap(buffer, size);
 }
 
@@ -98,13 +101,13 @@ void *prepare_prp_buffer(size_t size) {
 }
 
 int create_dma_buffer(size_t size, struct dma_buffer *dma_buffer) {
-    void* virtual_address = prepare_prp_buffer(size);
-    uint64_t physical_address; 
+    void *virtual_address = prepare_prp_buffer(size);
+    uint64_t physical_address;
     if (virtual_address == NULL) {
         return -1;
     }
-    
-    int ret = virt_to_phys(virtual_address, &physical_address); 
+
+    int ret = virt_to_phys(virtual_address, &physical_address);
 
     if (ret == -1) {
         release_buffer(virtual_address, size);
@@ -117,8 +120,7 @@ int create_dma_buffer(size_t size, struct dma_buffer *dma_buffer) {
     return 0;
 }
 
-
-void release_queue_buffer(void* cq_buffer, void* sq_buffer, size_t cq_size, size_t sq_size) {
+void release_queue_buffer(void *cq_buffer, void *sq_buffer, size_t cq_size, size_t sq_size) {
     munmap(cq_buffer, cq_size);
     munmap(sq_buffer, sq_size);
 }
