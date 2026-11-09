@@ -1,7 +1,7 @@
 #ifndef COEXISTENCE_H
 #define COEXISTENCE_H
+#include <stddef.h>
 #include <stdint.h>
-#include "memory.h"
 #include "nvme_types.h"
 
 struct coex_device {
@@ -18,4 +18,7 @@ int coex_close(struct coex_device *dev);
 int coex_read(struct coex_device *dev, uint64_t slba, uint16_t nlb, struct dma_buffer *buffer);
 
 int coex_write(struct coex_device *dev, uint64_t slba, uint16_t nlb, struct dma_buffer *buffer);
+int coex_alloc_buffer(size_t size, struct dma_buffer *buffer);
+void coex_free_buffer(struct dma_buffer *buffer);
+
 #endif

@@ -3,12 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
-
-struct dma_buffer {
-    void* virtual_address;
-    uint64_t physical_address;
-    size_t size;
-};
+#include "nvme_types.h"
 
 int virt_to_phys(void *virtual_addr, uint64_t *physical_address); 
 void *prepare_prp_buffer(size_t size);

@@ -16,6 +16,21 @@
 #define PAGESIZE 4096
 #define BLOCKSIZE 512
 
+
+int coex_alloc_buffer(size_t size, struct dma_buffer *buffer) {
+    int ret = create_dma_buffer(size, buffer);
+    if (ret == -1) {
+        fprintf(stderr, "Allocating Dma Buffer with size %zu failed\n", size);
+        return -1;
+    }
+    return 0;
+}
+
+void coex_free_buffer(struct dma_buffer *buffer) {
+   release_buffer(buffer->virtual_address, buffer->size); 
+}
+
+
 const char bar0[] = "/sys/bus/pci/devices/0000:01:00.0/resource0";
 int open_bar0() {
     int fd = open(bar0, O_RDWR);
@@ -107,15 +122,14 @@ int coex_init(struct coex_device *dev, uint16_t qid) {
 
     return 0;
 }
-int execute_io(struct coex_device *dev, struct nvme_sq_entry *sq_entry, struct nvme_cq_entry *cq_entry, struct dma_buffer *buffer, uint16_t current_cid) {
+
+int execute_io(struct coex_device *dev, struct nvme_sq_entry *sq_entry, struct nvme_cq_entry *cq_entry, uint16_t current_cid) {
     submit_command(&dev->queue_pair.sq, *sq_entry);
     int poll_ret = poll_completion(&dev->queue_pair.cq, cq_entry);
     if (poll_ret == -1) {
         fprintf(stderr, "Polling time outed: Queue %d\n", dev->queue_pair.qid);
         return -1;
     }
-    printf("phys: 0x%lx\n", buffer->physical_address);
-    printf("data: %.21s\n", (char *)buffer->virtual_address);
     struct nvme_status_field status_field = parse_status_field(cq_entry->dw3 >> 17);
     uint32_t cid = get_cid(cq_entry->dw3);
     if (cid != current_cid) {
@@ -136,7 +150,6 @@ int execute_io(struct coex_device *dev, struct nvme_sq_entry *sq_entry, struct n
     log_cid(cq_entry->dw3);
     log_sqid(cq_entry->dw2);
     return 0;
-
 }
 
 
@@ -152,7 +165,7 @@ int coex_read(struct coex_device *dev, uint64_t slba, uint16_t nlb, struct dma_b
         return -1;
     } 
     dev->cid += 1;
-    int execute_io_ret = execute_io(dev, &sq_entry, &cq_entry, buffer, current_cid);
+    int execute_io_ret = execute_io(dev, &sq_entry, &cq_entry, current_cid);
     if (execute_io_ret == -1) {
         return -1;
     }
@@ -170,7 +183,7 @@ int coex_write(struct coex_device *dev, uint64_t slba, uint16_t nlb, struct dma_
         return -1;
         } 
     dev->cid += 1;
-    int execute_io_ret = execute_io(dev, &sq_entry, &cq_entry, buffer, current_cid);
+    int execute_io_ret = execute_io(dev, &sq_entry, &cq_entry, current_cid);
     if(execute_io_ret == -1) {
         return -1;
     }

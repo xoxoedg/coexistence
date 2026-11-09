@@ -10,6 +10,11 @@ enum nvme_io_opcode {
     NVME_OP_READ = 0x02,
 };
 
+struct dma_buffer {
+    void* virtual_address;
+    uint64_t physical_address;
+    size_t size;
+};
 struct nvme_status_field {
     uint8_t  sc;
     uint8_t sct;
